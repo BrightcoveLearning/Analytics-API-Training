@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>Get API Client Credentials</title>
+	<style>
+	body {
+		font-family: Helvetica, Arial, sans-serif;
+		margin: 50px;
+	}
+	fieldset {
+		border: 1px solid #366;
+		border-radius: 4px;
+		margin-bottom: 20px;
+	}
+	legend {
+		color: #366;
+	}
+	textarea {
+		width: 95%;
+		height: 3rem;
+		font-size: 1rem;
+	}
+	input, pre, code, textarea {
+		font-size: 1rem;
+		background-color: #F5F5F5;
+	}
+	</style>
+</head>
+
+<body>
+	<h1>API Tester</h1>
+    <fieldset>
+        <legend>Inputs</legend>
+        <p>
+			Account ID:
+			<input size="60" id="account_id" type="text" value="">
+		</p>
+        <p>
+			Client ID:
+			<input size="60" id="client_id" type="text" value="">
+		</p>
+        <p>
+			Client Secret:
+			<input size="120" id="client_secret" type="text" value="">
+		</p>
+		<p>
+			Media API Token:
+			<input size="100" id="mapi_token" type="text" value="">
+		</p>
+		<p>
+			Service URL:
+			<input id="mapi_url" type="text" size="100" value="//api.brightcove.com/services/library">
+		</p>
+		<p>
+			Custom field to search (optional - if blank all custom fields will be searched):
+			<input size="60" id="custom_field" type="text" value="">
+		</p>
+		<p>
+			Custom field value for videos
+			<input size="60" id="custom_field_value" type="text" value="">
+		</p>
+    </fieldset>
+    <fieldset>
+    	<legend>Outputs</legend>
+		<p>
+			Media API request:
+			<textarea id="mapiRequest"></textarea>
+		</p>
+		<p>
+			Analytics API request:
+			<textarea id="aapiRequest"></textarea>
+		</p>
+        <p>
+            <input id="submit" type="submit" value="Submit Request">
+        </p>
+        <pre><code id="response"></code></pre>
+    </fieldset>
+	<!-- include the javascript media api wrapper -->
+    <script type="text/javascript" src="//docs.brightcove.com/en/scripts/bc-mapi.js"></script>
+	<script>
+	var BCLS = ( function (window, document, BCMAPI) {
+		var account_id_field = document.getElementById("account_id"),
+			account_id = null,
+			client_id_field = document.getElementById("client_id"),
+			client_id = null,
+			client_secret_field = document.getElementById("client_secret"),
+			client_secret = null,
+			mapi_token = null,
+			mapi_token_field = document.getElementById("mapi_token"),
+			mapi_url = "//api.brightcove.com/services/library",
+			mapi_url_field = document.getElementById("mapi_url"),
+			custom_field_value = null,
+			custom_field_value_field = document.getElementById("custom_field_value"),
+			custom_field = null,
+			custom_field_field = document.getElementById("custom_field"),
+			firstMapiCall = true,
+			callCounter = 0,
+			numberOfPages = 1,
+			idsArray = [],
+			mapiRequest = null,
+            mapiRequest_field = document.getElementById("mapiRequest"),
+			aapiRequest = "https://data.brightcove.com/analytics-api/videocloud/accounts/" + account_id + "/report?dimensions=video",
+            aapiRequest_field = document.getElementById("aapiRequest"),
+			submit_button = document.getElementById("submit"),
+			response = document.getElementById("response"),
+			// functions
+			cleanString,
+			submitRequest,
+			getVideos,
+			onMapiResponse,
+			prettyPrint,
+			init;
+		// function to remove spaces and line breaks
+		cleanString = function (str) {
+			// remove spaces
+			str = str.replace(/\s/g, "");
+			return str;
+		};
+		// pretty print json
+		prettyPrint = function (json) {
+			return JSON.stringify(JSON.parse(json), null, "  ");
+		}
+		// function to do the media api search
+		getVideos = function () {
+			// mapi-request.js goes here
+		};
+		// handler for Media API response
+		onMapiResponse = function (responseData) {
+			// mapi-response.js goes here
+		};
+		// function to make API request
+		submitRequest = function () {
+		    // analytics-request.js goes here
+
+		};
+		// init function to set up event listeners
+		init = function () {
+			// event listeners
+			submit_button.addEventListener("click", getVideos);
+			account_id_field.addEventListener("change", function () {
+				// trim any leading/trailing spaces from the input strings
+				account_id = cleanString(account_id_field.value);
+				aapiRequest = "https://data.brightcove.com/analytics-api/videocloud/accounts/" + account_id + "/report?dimensions=video";
+				// display the request URL
+				aapiRequest_field.value = aapiRequest;
+			});
+			client_id_field.addEventListener("change", function () {
+				client_id = cleanString(client_id_field.value);
+			});
+			client_secret_field.addEventListener("change", function () {
+				client_secret = cleanString(client_secret_field.value);
+			});
+			mapi_token_field.addEventListener("change", function () {
+				mapi_token = cleanString(mapi_token_field.value);
+			});
+			mapi_url_field.addEventListener("change", function () {
+				mapi_url = cleanString(mapi_url_field.value);
+			});
+			custom_field_field.addEventListener("change", function () {
+				custom_field = cleanString(custom_field_field.value);
+			});
+			custom_field_value_field.addEventListener("change", function () {
+				custom_field_value = cleanString(custom_field_value_field.value);
+			});
+		};
+		// initialize - set up data
+		init();
+		// media api response handler must be public
+		return {
+			"onMapiResponse": onMapiResponse
+		}
+
+	})(window, document, BCMAPI);
+	</script>
+</body>
+
+</html>

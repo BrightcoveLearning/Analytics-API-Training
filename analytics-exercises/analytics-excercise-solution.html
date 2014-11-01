@@ -54,15 +54,23 @@
 			<input id="mapi_url" type="text" size="100" value="//api.brightcove.com/services/library">
 		</p>
 		<p>
-			Custom field value for videos
+			Custom field to search (optional - if blank all custom fields will be searched):
 			<input size="60" id="custom_field" type="text" value="">
+		</p>
+		<p>
+			Custom field value for videos
+			<input size="60" id="custom_field_value" type="text" value="">
 		</p>
     </fieldset>
     <fieldset>
     	<legend>Outputs</legend>
 		<p>
-			API request:
-			<textarea id="apiRequest"></textarea>
+			Media API request:
+			<textarea id="mapiRequest"></textarea>
+		</p>
+		<p>
+			Analytics API request:
+			<textarea id="aapiRequest"></textarea>
 		</p>
         <p>
             <input id="submit" type="submit" value="Submit Request">
@@ -74,22 +82,27 @@
 	<script>
 	var BCLS = ( function (window, document, BCMAPI) {
 		var account_id_field = document.getElementById("account_id"),
-			account_id,
+			account_id = 57838016001,
 			client_id_field = document.getElementById("client_id"),
-			client_id = null,
+			client_id = "1288862a-2cb4-4897-8de4-1723cc8e6840",
 			client_secret_field = document.getElementById("client_secret"),
-			client_secret = null,
-			mapi_token = null,
+			client_secret = "q0XmYjt4CV_B8s0bEW_0OI6xtVXyrx2ymtT3xbkR8CM6XtQXuPu6dMI-d9ydnvohYUOsdzKytHyS48jnOOsiZw",
+			mapi_token = "jskS1rEtQHy9exQKoc14IcMq8v5x2gCP6yaB7d0hraRtO__6HUuxMg..",
 			mapi_token_field = document.getElementById("mapi_token"),
 			mapi_url = "//api.brightcove.com/services/library",
 			mapi_url_field = document.getElementById("mapi_url"),
+			custom_field_value = "training",
+			custom_field_value_field = document.getElementById("custom_field_value"),
 			custom_field = null,
 			custom_field_field = document.getElementById("custom_field"),
 			firstMapiCall = true,
 			callCounter = 0,
 			numberOfPages = 1,
-			apiRequest = null,
-            apiRequest_field = document.getElementById("apiRequest"),
+			idsArray = [],
+			mapiRequest = null,
+            mapiRequest_field = document.getElementById("mapiRequest"),
+			aapiRequest = "https://data.brightcove.com/analytics-api/videocloud/accounts/" + account_id + "/report?dimensions=video",
+            aapiRequest_field = document.getElementById("aapiRequest"),
 			submit_button = document.getElementById("submit"),
 			response = document.getElementById("response"),
 			// functions
@@ -97,6 +110,7 @@
 			submitRequest,
 			getVideos,
 			onMapiResponse,
+			prettyPrint,
 			init;
 		// function to remove spaces and line breaks
 		cleanString = function (str) {
@@ -104,10 +118,14 @@
 			str = str.replace(/\s/g, "");
 			return str;
 		};
+		// pretty print json
+		prettyPrint = function (json) {
+			return JSON.stringify(JSON.parse(json), null, "  ");
+		}
 		// function to do the media api search
 		getVideos = function () {
 			var params = {};
-			if (mapi_token_field === null) {
+			if (mapi_token === null) {
 				alert("You must enter a Media API READ token");
 				return false;
 			}
@@ -116,42 +134,51 @@
 			BCMAPI.token = mapi_token;
 			BCMAPI.callback = "BCLS.onMapiResponse";
 			// set params
-			params.any = "custom_fields:" + custom_field;
+			if (custom_field !== null) {
+				params.any = custom_field + ":" + custom_field_value;
+			} else {
+				params.any = "custom_fields:" + custom_field_value;
+			}
 			params.page_size = 100;
-			params.page_number
+			params.page_number = callCounter;
 			params.video_fields = "id";
-			params.get_item_count = true;
+			// we only need to get the item count once
+			if (firstMapiCall) {
+				params.get_item_count = true;
+			}
 			// call mapi
 			BCMAPI.search(params);
 		};
 		// handler for Media API response
 		onMapiResponse = function (responseData) {
-					var data = JSON.parse(responseData),
-						i,
-						imax,
-						item,
-						idsArray = [],
-						idStr = "";
-					// increment the call callCounter
-					callCounter++;
-					if (firstMapiCall) {
-						numberOfPages = Math.ceil(responseData.total_count/responseData.page_size);
-					}
-					imax = data.items.length;
-					for (i = 0; i < imax; i++) {
-						idsArray.push(data.items[i].id);
-					}
-					if (callCounter < numberOfPages) {
-						// more items left, call media api again
-						getVideos();
-					} else {
-						// got all items, wrap up and get analytics data
-						idStr = idsArray.join();
-						apiRequest += "where=video==" + idStr + "&limit=all";
-						apiRequest_field.value = apiRequest;
-						submitRequest();
-					}
-				};
+			var data = responseData,
+				i,
+				imax,
+				item;
+			// increment the call callCounter
+			callCounter++;
+			// display the API request
+			mapiRequest_field.value = BCMAPI.request;
+			// if this is first pass, need to see how many matching videos there
+			if (firstMapiCall) {
+				numberOfPages = Math.ceil(responseData.total_count/responseData.page_size);
+				firstMapiCall = false;
+			}
+			// put the IDs into a array till we're done
+			imax = data.items.length;
+			for (i = 0; i < imax; i++) {
+				idsArray.push(data.items[i].id);
+			}
+			if (callCounter < numberOfPages) {
+				// more items left, call media api again
+				getVideos();
+			} else {
+				// got all items, wrap up and get analytics data
+				aapiRequest += "&where=video==" + idsArray.join() + "&limit=all&fields=all";
+				aapiRequest_field.value = aapiRequest;
+				submitRequest();
+			}
+		};
 		// function to make API request
 		submitRequest = function () {
 		    var httpRequest = new XMLHttpRequest(),
@@ -162,8 +189,7 @@
 					try {
 					    if (httpRequest.readyState === 4) {
 					      if (httpRequest.status === 200) {
-					        response.innerHTML = httpRequest.responseText;
-					        var data = httpRequest.responseText;
+					        response.innerHTML = prettyPrint(httpRequest.responseText);
 					      } else {
 					        alert("There was a problem with the request. Request returned " + httpRequest.status);
 					      }
@@ -178,9 +204,9 @@
 				return false;
 			}
 			// get latest request URL in case use edited it
-			apiRequest = cleanString(apiRequest_field.value);
+			aapiRequest = cleanString(aapiRequest_field.value);
 			// set up request data
-			requestData = "client_id=" + client_id + "&client_secret=" + client_secret + "&url=" + encodeURIComponent(apiRequest);
+			requestData = "client_id=" + client_id + "&client_secret=" + client_secret + "&url=" + encodeURIComponent(aapiRequest);
 			// set response handler
 			httpRequest.onreadystatechange = getResponse;
 			// open the request
@@ -197,9 +223,9 @@
 			account_id_field.addEventListener("change", function () {
 				// trim any leading/trailing spaces from the input strings
 				account_id = cleanString(account_id_field.value);
-				apiRequest = "https://data.brightcove.com/analytics-api/videocloud/accounts/" + account_id + "/report?dimensions=video";
+				aapiRequest = "https://data.brightcove.com/analytics-api/videocloud/accounts/" + account_id + "/report?dimensions=video";
 				// display the request URL
-				apiRequest_field.value = apiRequest;
+				aapiRequest_field.value = aapiRequest;
 			});
 			client_id_field.addEventListener("change", function () {
 				client_id = cleanString(client_id_field.value);
@@ -215,6 +241,9 @@
 			});
 			custom_field_field.addEventListener("change", function () {
 				custom_field = cleanString(custom_field_field.value);
+			});
+			custom_field_value_field.addEventListener("change", function () {
+				custom_field_value = cleanString(custom_field_value_field.value);
 			});
 		};
 		// initialize - set up data
