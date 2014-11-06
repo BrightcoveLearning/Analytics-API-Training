@@ -125,15 +125,101 @@
 		// function to do the media api search
 		getVideos = function () {
 			// mapi-request.js goes here
+			var params = {};
+			if (mapi_token === null) {
+				alert("You must enter a Media API READ token");
+				return false;
+			}
+			// set values for MAPI call
+			BCMAPI.url = mapi_url;
+			BCMAPI.token = mapi_token;
+			BCMAPI.callback = "BCLS.onMapiResponse";
+			// set params
+			if (custom_field !== null) {
+				params.any = custom_field + ":" + custom_field_value;
+			} else {
+				params.any = "custom_fields:" + custom_field_value;
+			}
+			params.page_size = 100;
+			params.page_number = callCounter;
+			params.video_fields = "id";
+			// we only need to get the item count once
+			if (firstMapiCall) {
+				params.get_item_count = true;
+			}
+			// call mapi
+			BCMAPI.search(params);
+
 		};
 		// handler for Media API response
 		onMapiResponse = function (responseData) {
 			// mapi-response.js goes here
+			var data = responseData,
+				i,
+				imax,
+				item;
+			// increment the call callCounter
+			callCounter++;
+			// display the API request
+			mapiRequest_field.value = BCMAPI.request;
+			// if this is first pass, need to see how many matching videos there
+			if (firstMapiCall) {
+				numberOfPages = Math.ceil(responseData.total_count/responseData.page_size);
+				firstMapiCall = false;
+			}
+			// put the IDs into a array till we're done
+			imax = data.items.length;
+			for (i = 0; i < imax; i++) {
+				idsArray.push(data.items[i].id);
+			}
+			if (callCounter < numberOfPages) {
+				// more items left, call media api again
+				getVideos();
+			} else {
+				// got all items, wrap up and get analytics data
+				aapiRequest += "&where=video==" + idsArray.join() + "&limit=all&fields=all";
+				aapiRequest_field.value = aapiRequest;
+				submitRequest();
+			}
+
 		};
 		// function to make API request
 		submitRequest = function () {
 		    // analytics-request.js goes here
-
+var httpRequest = new XMLHttpRequest(),
+// url for the analytics api proxy
+proxyURL = "http://solutions.brightcove.com:8002/",
+requestData,
+getResponse = function () {
+	try {
+	    if (httpRequest.readyState === 4) {
+	      if (httpRequest.status === 200) {
+	        response.innerHTML = prettyPrint(httpRequest.responseText);
+	      } else {
+	        alert("There was a problem with the request. Request returned " + httpRequest.status);
+	      }
+	    }
+	  }
+	  catch(e) {
+	    alert('Caught Exception: ' + e.description);
+	  }
+};
+if (account_id === null || client_id === null || client_secret === null) {
+alert("You must provide an account id, client id, and client secret");
+return false;
+}
+// get latest request URL in case use edited it
+aapiRequest = cleanString(aapiRequest_field.value);
+// set up request data
+requestData = "client_id=" + client_id + "&client_secret=" + client_secret + "&url=" + encodeURIComponent(aapiRequest);
+// set response handler
+httpRequest.onreadystatechange = getResponse;
+// open the request
+httpRequest.open("POST", proxyURL);
+// set headers
+httpRequest.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+// open and send request
+httpRequest.send(requestData);
 		};
 		// init function to set up event listeners
 		init = function () {
