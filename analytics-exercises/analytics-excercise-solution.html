@@ -37,6 +37,10 @@
 			Account ID:
 			<input size="60" id="account_id" type="text" value="">
 		</p>
+		<p>
+			Analytics API Token (if you have one - otherwise enter client credentials below)
+			<input size="60" id="aapi_token" type="text" value="">
+		</p>
         <p>
 			Client ID:
 			<input size="60" id="client_id" type="text" value="">
@@ -83,6 +87,8 @@
 	var BCLS = ( function (window, document, BCMAPI) {
 		var account_id_field = document.getElementById("account_id"),
 			account_id = 57838016001,
+			aapi_token_field = document.getElementById("aapi_token"),
+			aapi_token = null;
 			client_id_field = document.getElementById("client_id"),
 			client_id = "1288862a-2cb4-4897-8de4-1723cc8e6840",
 			client_secret_field = document.getElementById("client_secret"),
@@ -206,6 +212,9 @@
 			// get latest request URL in case use edited it
 			aapiRequest = cleanString(aapiRequest_field.value);
 			// set up request data
+			if (aapi_token !== null) {
+				requestData = "aapi_token=" + aapi_token + "&url=" + encodeURIComponent(aapiRequest);
+			}
 			requestData = "client_id=" + client_id + "&client_secret=" + client_secret + "&url=" + encodeURIComponent(aapiRequest);
 			// set response handler
 			httpRequest.onreadystatechange = getResponse;
