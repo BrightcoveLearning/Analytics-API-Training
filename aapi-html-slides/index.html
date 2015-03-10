@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=1024, user-scalable=no">
+
+  <title>Analytics API v0&gt;v1 Migration</title>
+
+  <!-- Required stylesheet -->
+  <link rel="stylesheet" media="screen" href="core/deck.core.css">
+
+  <!-- Extension CSS files go here. Remove or add as needed. -->
+  <link rel="stylesheet" media="screen" href="extensions/goto/deck.goto.css">
+  <link rel="stylesheet" media="screen" href="extensions/menu/deck.menu.css">
+  <link rel="stylesheet" media="screen" href="extensions/navigation/deck.navigation.css">
+  <link rel="stylesheet" media="screen" href="extensions/status/deck.status.css">
+  <link rel="stylesheet" media="screen" href="extensions/scale/deck.scale.css">
+
+  <!-- Style theme. More available in /themes/style/ or create your own. -->
+  <link rel="stylesheet" media="screen" href="themes/style/web-2.0.css">
+
+  <!-- Transition theme. More available in /themes/transition/ or create your own. -->
+  <link rel="stylesheet" media="screen" href="themes/transition/horizontal-slide.css">
+
+  <!-- Basic black and white print styles -->
+  <link rel="stylesheet" media="print" href="core/print.css">
+
+  <!-- Required Modernizr file -->
+  <script src="modernizr.custom.js"></script>
+</head>
+<body>
+  <div class="deck-container">
+
+    <!-- Begin slides. Just make elements with a class of slide. -->
+
+    <section class="slide">
+      <h1>Analytics API Migration Training</h1>
+      <h2 style="font-size: 30px; text-align: right;">Robert Crooks, Learning Services</h2>
+      <h2 style="font-size: 24px; text-align: right;">March, 2015</h2>
+    </section>
+
+    <section class="slide">
+      <h2>Introduction</h2>
+      <p>These slides will walk you through the changes from the v0 (LA) version of the Analytics API to the v1 (GA) version</p>
+    </section>
+
+    <section class="slide">
+      <h1>General Changes</h1>
+    </section>
+
+    <section class="slide">
+      <h2>Base URL</h2>
+        <p>The base URL for the API has changed:</p>
+        <p>Old URL:</p>
+<pre><code>https://data.brightcove.com/analytics-api/videocloud</code></pre>
+        <p><strong>New URL:</strong></p>
+<pre><code><strong>https://analytics.api.brightcove.com/v1</strong></code></pre>
+    </section>
+
+    <section class="slide">
+      <h2>Authentication</h2>
+        <p>Authentication via the v0 (Limited Availabilty) is no longer supported. You must get access tokens for the Analytics API via the <a href="//docs.brightcove.com/en/video-cloud/oauth-api/getting-started/oauth-api-overview.html">Brightcove OAuth Service</a>. See <a href="//docs.brightcove.com/en/video-cloud/analytics-api/guides/managing-api-credentials.html">Managing API Credentials</a> for information on obtaining client credentials for the Analytics API.</p>
+        <div class="BCL-aside"><p>Note: you can also use the OAuth service to authenticate calls to the v0 API. You may want to test this with working apps before migrating to v1, to make sure you have the authentication implemented correctly.</p>
+        <p>Also note: for v1, you need permissions for the following operation:</p>
+        <ul>
+          <li>video-cloud/analytics/read</li>
+          <li>video-cloud/video/read (for the CMS)</li>
+        </ul>
+        </div>
+    </section>
+
+    <section class="slide">
+      <h2>Rollups</h2>
+        <p>Account rollup calls are no longer supported. If you were using rollups to get detailed engagement information on recent video views, you will now be able to obtain these through the new engagement endpoints.</p>
+    </section>
+
+    <section class="slide">
+      <h1>Report Changes</h1>
+    </section>
+
+    <section class="slide">
+      <h2>New Report Endpoint</h2>
+        <p>Reports are now accessed through the <code>data</code> resource rather than <code>report</code>:</p>
+        <p>Old report endpoint</p>
+<pre><code>https://data.brightcove.com/analytics-api/videocloud/accounts/{accountId}/report</code></pre>
+        <p><strong>New report endpoint</strong></p>
+<pre><code><strong>https://analytics.api.brightcove.com/v1/data</strong></code></pre>
+    </section>
+
+    <section class="slide">
+      <h2>Accounts</h2>
+      <dl>
+        <dt id="accounts">Accounts Parameter</dt>
+        <dd>For <a href="#reports">reports</a>, <code>accounts</code> is now a <strong>parameter</strong> rather than a <strong>resource</strong> in the URL path - this allows generation of reports on multiple accounts:
+        <p>Old way:</p>
+<pre><code>.../accounts/{accountId}/report...</code></pre>
+        <p><strong>New way:</strong></p>
+<pre><code><strong>.../data?accounts={account_id1},{account_id2}...</strong></code></pre>
+        <p class="BCL-aside">Note: the new <a href="#engagementEndpoints">engagement endpoints</a> and the <a href="//docs.brightcove.com/en/video-cloud/analytics-api/guides/video-information-endpoint.html">video information endpoint</a> still have <code>/accounts/{account_id}/ in the URL path, and accept requests for a single account only.</code></p>
+        </dd>
+      </dl>
+    </section>
+
+    <section class="slide">
+      <h2>Day Dimension &gt; Date Dimension</h2>
+        <p>The <code>day</code> dimension for reports is replaced by the <strong><code>date</code></strong> dimension. The <code>date</code> dimension works in the same way and returns the same data as the old <code>day</code> dimension. See the <a href="//docs.brightcove.com/en/video-cloud/analytics-apiguides/date.html">guide to the <code>date</code> dimension</a> for more information.</p>
+    </section>
+
+    <section class="slide">
+      <h2>New date_hour Dimension</h2>
+        <p>The <code>date_hour</code> dimension is used like the <code><span id="#date">date</span></code> dimension, but allows you to get hourly data for periods within the previous 32 days. If the range for the <code>date_hour</code> requests extends outside the previous 32 days, an error will be returned. To specify hours of the day for request, set the <code>from</code> and <code>to</code> parameters to millisecond value of epoch time rather than using MM-DD-YYYY dates. For example:</p>
+<pre><code id="date_hour_example">.../data?accounts={account_id}&dimensions=date_hour&from=1425938965193&to=1425946165193
+</code></pre>
+        <p>See the <a href="//docs.brightcove.com/en/video-cloud/analytics-apiguides/date_hour.html">guide to the <code>date_hour</code> dimension</a> for more information.</p>
+    </section>
+
+    <section class="slide">
+      <h2>Top-Level Fields for Reports</h2>
+        <p>Reports will always have these three top-level fields (only):</p>
+        <ul>
+            <li><code>summary</code></li>
+            <li><code>item_count</code></li>
+            <li><code>items</code></li>
+        </ul>
+    </section>
+
+    <section class="slide">
+      <h2>Fields for Multiple Dimension Reports</h2>
+        <p>Fields returned for reports on multiple dimensions will be a union of the fields for each dimension included in the request. See the <a href="//docs.brightcove.com/en/video-cloud/analytics-api/getting-started/api-overview.html#reportDimensions">Analytics API Overview</a> for information on what dimensions can be combined in reports.</p>
+    </section>
+
+    <section class="slide">
+      <h2>Field Validation</h2>
+      <dl>
+        <dt id="fieldValidation">Strict validation on <code>fields</code> and <code>sort</code> parameters</dt>
+        <dd>The <code>fields</code> and <code>sort</code> parameters are strictly validated. If you include a field that is not supported for the call you are making, an error will be returned.</dd>
+      </dl>
+    </section>
+
+    <section class="slide">
+      <h2>video.reference_id</h2>
+        <p>If you include <code>video.reference_id</code> in <code>fields</code> for reports on the <code>video</code> dimension, the reference id will be returned in the response (or <code>null</code> if there is no reference id). Reference id data is cached for 24 hours, and so will not reflect changes made in the past 24 hours.</p>
+        <p>Note: <code>video.reference_id</code> must be explicitly included in <code>fields</code> in order to return it. <code>fields=all</code> will not include this field.</p>
+    </section>
+
+    <section class="slide">
+      <h2>video.tags</h2>
+        <p>If you include <code>video.tags</code> in <code>fields</code> for reports on the <code>video</code> dimension, the video tags will be returned in the response (or <code>null</code> if there are no tags). Tags data is cached for 24 hours, and so will not reflect changes made in the past 24 hours.</p>
+        <p>Note: <code>video.tags</code> must be explicitly included in <code>fields</code> in order to return it. <code>fields=all</code> will not include this field.</p>
+    </section>
+
+    <section class="slide">
+      <h2>Filtering by reference_id or tags</h2>
+        <p>The <code>where</code> filter syntax for tags and reference ids is as follows:</p>
+        <p><strong>Filter by tags</strong></p>
+<pre><code>where=video.q==tags:foo,bar</code></pre>
+        <p><strong>Filter by reference ids</strong></p>
+<pre><code>where=video.q==reference_id:refid1,refid2</code></pre>
+    </section>
+
+    <section class="slide">
+      <h1>Engagement Endpoints</h1>
+    </section>
+
+    <section class="slide">
+      <h2>New Engagement Endpoints</h2>
+      <p>Three new engagement endpoints allow you to get granular engagement information for each 100th part of videos:</p>
+      <p>Account averages</p>
+<pre><code>.../engagement/accounts/{account_id}</code></pre>
+      <p>Averages for a player</p>
+<pre><code>.../engagement/accounts/{account_id}/players/{player_id}</code></pre>
+      <p>Engagement for a video</p>
+<pre><code>.../engagement/accounts/{account_id}/videos/{video_id}</code></pre>
+      <p>The only parameters supported for engagement endpoints are <code>from</code> and <code>to</code>.</p>
+      <p>Only periods within the previous 32 days are supported for engagement endpoints.</p>
+    </section>
+
+    <section class="slide">
+      <h1>Documentation</h1>
+    </section>
+
+    <section class="slide">
+      <h2>Until GA Release</h2>
+      <p>Draft documentation for the Analytics API v1 is located at:</p>
+      <p><a href="http://docs.brightcove.com/en/video-cloud/analytics-api-v1/index.html">http://docs.brightcove.com/en/video-cloud/analytics-api-v1/index.html</a></p>
+      <p>API Overview</p>
+      <p><a href="http://docs.brightcove.com/en/video-cloud/analytics-api-v1/getting-started/api-overview.html">http://docs.brightcove.com/en/video-cloud/analytics-api-v1/getting-started/api-overview.html</a></p>
+      <p>Migration Guide</p>
+      <p><a href="http://docs.brightcove.com/en/video-cloud/analytics-api-v1/getting-started/migration-guide.html">http://docs.brightcove.com/en/video-cloud/analytics-api-v1/getting-started/migration-guide.html</a></p>
+    </section>
+
+    <section class="slide">
+      <h2>Post GA Release</h2>
+      <p>Post-release documentation for the Analytics API v1 will be located at:</p>
+      <p><a href="http://docs.brightcove.com/en/video-cloud/analytics-api/index.html">http://docs.brightcove.com/en/video-cloud/analytics-api/index.html</a></p>
+      <p>API Overview</p>
+      <p><a href="http://docs.brightcove.com/en/video-cloud/analytics-api/getting-started/api-overview.html">http://docs.brightcove.com/en/video-cloud/analytics-api/getting-started/api-overview.html</a></p>
+      <p>Migration Guide</p>
+      <p><a href="http://docs.brightcove.com/en/video-cloud/analytics-api/getting-started/migration-guide.html">http://docs.brightcove.com/en/video-cloud/analytics-api/getting-started/migration-guide.html</a></p>
+    </section>
+
+    <section class="slide">
+      <h1>Testing Tool</h1>
+    </section>
+
+    <section class="slide">
+      <h2>api-tester.sh</h2>
+      <p>Learning Services has created a shell script that you can you use to test API requests for any of our new APIs. Download the script from <a href="http//docs.brightcove.com/en/video-cloud/oauth-api/assets/api-tester.sh.zip">http//docs.brightcove.com/en/video-cloud/oauth-api/assets/api-tester.sh.zip</a></p>
+      <p>Unzip the script to any folder. To run the script, open a command line in the same folder and type:</p>
+<pre><code>bash api-tester.sh</code></pre>
+      <p>The script will prompt you for:</p>
+      <ul>
+        <li>Your client_id</li>
+        <li>Your client_secret</li>
+        <li>The URL for the API request</li>
+        <li>The HTTP method (for the Analytics API, this will always be GET)</li>
+        <li>Request data (for the Analytics API, there will be no request data - just press return)</li>
+      </ul>
+      <p><strong>Windows users: you will need to install cygwin to run shell scripts. See instructions at <a href="http://docs.brightcove.com/en/video-cloud/concepts/curl/curl.html">http://docs.brightcove.com/en/video-cloud/concepts/curl/curl.html</a></strong></p>
+    </section>
+
+    <section class="slide">
+      <h2>Demo: Using api-tester.sh</h2>
+      <p>Note: Because the v1 version of the API is not yet in production, this demo will use a special version of the api-tester script for our QA environment.</p>
+    </section>
+
+    <section class="slide">
+      <h1>Questions?</h1>
+    </section>
+
+    <!-- End slides. -->
+
+    <!-- Begin extension snippets. Add or remove as needed. -->
+
+    <!-- deck.navigation snippet -->
+    <div aria-role="navigation">
+      <a href="#" class="deck-prev-link" title="Previous">&#8592;</a>
+      <a href="#" class="deck-next-link" title="Next">&#8594;</a>
+    </div>
+
+    <!-- deck.status snippet -->
+    <p class="deck-status" aria-role="status">
+      <span class="deck-status-current"></span>
+      /
+      <span class="deck-status-total"></span>
+    </p>
+
+    <!-- deck.goto snippet -->
+    <form action="." method="get" class="goto-form">
+      <label for="goto-slide">Go to slide:</label>
+      <input type="text" name="slidenum" id="goto-slide" list="goto-datalist">
+      <datalist id="goto-datalist"></datalist>
+      <input type="submit" value="Go">
+    </form>
+
+    <!-- End extension snippets. -->
+  </div>
+
+<!-- Required JS files. -->
+<script src="jquery.min.js"></script>
+<script src="core/deck.core.js"></script>
+
+<!-- Extension JS files. Add or remove as needed. -->
+<script src="extensions/menu/deck.menu.js"></script>
+<script src="extensions/goto/deck.goto.js"></script>
+<script src="extensions/status/deck.status.js"></script>
+<script src="extensions/navigation/deck.navigation.js"></script>
+<script src="extensions/scale/deck.scale.js"></script>
+
+<!-- Initialize the deck. You can put this in an external file if desired. -->
+<script>
+  $(function() {
+    $.deck('.slide');
+  });
+</script>
+</body>
+</html>
